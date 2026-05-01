@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wheel Strategy Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c0d11;
+  --surface: #13151b;
+  --surface2: #191c25;
+  --surface3: #1f2330;
+  --borderv: #222633;
+  --border2: #2c3348;
+  --text: #dde3f0;
+  --text2: #7b86a0;
+  --text3: #3f4a61;
+  --accent: #4f7ef8;
+  --accent2: #7aa3ff;
+  --green: #1fba5e;
+  --green2: #3fd47a;
+  --red: #e84040;
+  --red2: #f47272;
+  --yellow: #e8a020;
+  --orange: #f07030;
+  --purple: #9b5cf6;
+  --put-color: #f4884a;
+  --call-color: #2ec98a;
+  --sans: 'Plus Jakarta Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --r: 10px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:13px}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:1px solid var(--borderv);background:var(--surface);position:sticky;top:0;z-index:100}
+.logo{font-size:1rem;font-weight:700;letter-spacing:-.01em;background:linear-gradient(130deg,#6b9fff,#a87fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.btc-live{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--borderv);border-radius:8px;padding:6px 14px}
+.btc-price{font-family:var(--mono);font-size:.98rem;font-weight:500;color:var(--accent2)}
+.btc-change{font-family:var(--mono);font-size:.75rem}
+.btc-change.up{color:var(--green)}.btc-change.down{color:var(--red)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+#lastUpdate{font-size:.6rem;color:var(--text3)}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--borderv);background:var(--surface);padding:0 24px}
+.tab{padding:10px 18px;font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;border-bottom:2px solid transparent;color:var(--text2);transition:all .2s;user-select:none}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent2);border-bottom-color:var(--accent)}
+
+/* PAGE */
+.page{display:none;padding:18px 24px 48px}
+.page.active{display:block}
+.section-gap{margin-top:14px}
+
+/* GRID */
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:1000px){.grid-3{grid-template-columns:1fr 1fr}}
+@media(max-width:680px){.grid-3{grid-template-columns:1fr}}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--borderv);border-radius:var(--r);padding:16px}
+.card-title{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.ctl{display:flex;align-items:center;gap:8px}
+.ctl::before{content:'';display:block;width:3px;height:12px;border-radius:2px;background:var(--accent);flex-shrink:0}
+
+/* INPUT */
+.ig{display:flex;flex-direction:column;gap:4px}
+.il{font-size:.67rem;color:var(--text2);font-weight:500}
+.if{background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:7px 11px;color:var(--text);font-family:var(--mono);font-size:.82rem;transition:border-color .15s;width:100%;-moz-appearance:textfield}
+.if::-webkit-inner-spin-button,.if::-webkit-outer-spin-button{-webkit-appearance:none}
+.if:focus{outline:none;border-color:var(--accent)}
+select.if{cursor:pointer}
+
+/* BUTTONS */
+.btn{border-radius:7px;font-family:var(--sans);cursor:pointer;transition:opacity .15s;white-space:nowrap;font-weight:600;border:none}
+.btn-p{background:var(--accent);color:#fff;font-size:.75rem;padding:7px 14px}
+.btn-p:hover{opacity:.85}
+.btn-g{background:var(--surface2);border:1px solid var(--border2);color:var(--text2);font-size:.75rem;padding:7px 14px}
+.btn-g:hover{color:var(--text);border-color:var(--accent2)}
+.btn-sm{padding:4px 9px!important;font-size:.67rem!important;border-radius:5px!important}
+.btn-ic{background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:3px 7px;cursor:pointer;color:var(--text2);font-size:.7rem;transition:all .15s;display:inline-flex;align-items:center;gap:3px;font-family:var(--sans)}
+.btn-ic:hover{color:var(--text);border-color:var(--accent2)}
+.btn-rd{background:rgba(232,64,64,.12);border-color:rgba(232,64,64,.25);color:var(--red2)}
+.btn-rd:hover{background:rgba(232,64,64,.22)}
+
+/* STAT */
+.ss{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sb{background:var(--surface2);border:1px solid var(--borderv);border-radius:8px;padding:11px}
+.sl{font-size:.6rem;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;font-weight:600}
+.sv{font-family:var(--mono);font-size:1.05rem;font-weight:500}
+.sv.green{color:var(--green)}.sv.red{color:var(--red)}.sv.blue{color:var(--accent2)}.sv.yellow{color:var(--yellow)}
+
+/* BAR */
+.cbar{margin-top:10px;background:var(--surface2);border-radius:7px;padding:10px 12px;border:1px solid var(--borderv)}
+.cbarlabel{font-size:.6rem;color:var(--text2);margin-bottom:7px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.bartrack{background:var(--surface3);border-radius:4px;height:6px;overflow:hidden}
+.barfill{height:100%;border-radius:4px;transition:width .6s cubic-bezier(.4,0,.2,1);background:linear-gradient(90deg,var(--green),#7cdf6a)}
+.barfill.over{background:linear-gradient(90deg,var(--red),var(--orange))}
+.bartxt{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.67rem;margin-top:5px;color:var(--text2)}
+.canopen{font-size:.7rem;margin-top:10px;padding:8px 11px;border-radius:7px;background:rgba(31,186,94,.07);border:1px solid rgba(31,186,94,.16);color:var(--green2);line-height:1.6}
+
+/* PIVOT */
+.pt{width:100%;border-collapse:collapse}
+.pt th{font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:5px 10px;text-align:left;border-bottom:1px solid var(--borderv);font-weight:600}
+.pt td{padding:7px 10px;font-size:.78rem;border-bottom:1px solid var(--borderv);font-family:var(--mono)}
+.pt tr:last-child td{border-bottom:none}
+.pt tr:hover td{background:rgba(255,255,255,.012)}
+.pb{display:inline-block;padding:2px 7px;border-radius:4px;font-family:var(--mono);font-size:.7rem;font-weight:500}
+.pb.red{background:rgba(232,64,64,.1);color:var(--red2)}
+.pb.green{background:rgba(31,186,94,.1);color:var(--green2)}
+
+/* LOTS */
+.lt{width:100%;border-collapse:collapse}
+.lt th{font-size:.59rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:6px 10px;text-align:right;border-bottom:1px solid var(--borderv);white-space:nowrap;font-weight:600}
+.lt th:first-child,.lt th:last-child{text-align:left}
+.lt td{padding:8px 10px;font-size:.76rem;border-bottom:1px solid var(--borderv);text-align:right;white-space:nowrap;font-family:var(--mono)}
+.lt td:first-child,.lt td:last-child{text-align:left;font-family:var(--sans)}
+.lt tr:last-child td{border-bottom:none}
+.lt tr:hover td{background:rgba(155,92,246,.025)}
+.lname{display:flex;align-items:center;gap:7px;font-weight:600;font-size:.78rem;font-family:var(--sans)}
+.ldot{width:6px;height:6px;border-radius:50%;background:var(--purple);flex-shrink:0}
+.ppos{color:var(--green)}.pneg{color:var(--red)}
+.fcov{font-size:.63rem;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(31,186,94,.1);color:var(--green2);font-family:var(--sans)}
+.tagr{font-size:.58rem;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(232,64,64,.12);color:var(--red2)}
+.lt .tr-tot td{font-weight:600;border-top:1px solid var(--border2);border-bottom:none;background:rgba(255,255,255,.015)}
+
+/* ORDERS */
+.ow{overflow-x:auto}
+.ot{width:100%;border-collapse:collapse;min-width:860px}
+.ot th{font-size:.59rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;text-align:left;border-bottom:1px solid var(--borderv);white-space:nowrap;font-weight:600;background:var(--surface)}
+.ot td{padding:8px 10px;font-size:.76rem;border-bottom:1px solid var(--borderv);white-space:nowrap}
+.ot tr:hover td{background:rgba(255,255,255,.012)}
+.filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.fbtn{background:var(--surface2);border:1px solid var(--borderv);border-radius:6px;padding:5px 11px;color:var(--text2);font-size:.68rem;font-weight:600;cursor:pointer;transition:all .15s;letter-spacing:.04em;text-transform:uppercase}
+.fbtn.active,.fbtn:hover{background:var(--surface3);border-color:var(--accent);color:var(--text)}
+.ss-sel{background:transparent;border:none;color:inherit;font-family:var(--mono);font-size:.71rem;cursor:pointer;padding:1px}
+.apy-c{font-size:.64rem;padding:2px 6px;border-radius:4px;background:rgba(232,160,32,.09);color:var(--yellow);font-weight:600;font-family:var(--mono)}
+
+/* BADGE */
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.67rem;font-weight:600;letter-spacing:.03em;font-family:var(--sans)}
+.badge.put{background:rgba(244,136,74,.12);color:var(--put-color)}
+.badge.call{background:rgba(46,201,138,.12);color:var(--call-color)}
+.badge.open{background:rgba(79,126,248,.12);color:var(--accent2)}
+.badge.closed{background:rgba(148,163,184,.09);color:var(--text2)}
+.badge.exercised{background:rgba(155,92,246,.12);color:var(--purple)}
+
+/* HISTORY */
+.mc{background:var(--surface);border:1px solid var(--borderv);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.mt{font-size:.88rem;font-weight:700}
+.mstats{display:flex;gap:22px}
+.mst .msl{font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.mst .msv{font-family:var(--mono);font-size:.9rem;font-weight:500}
+.ht{width:100%;border-collapse:collapse}
+.ht th{font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:5px 8px;text-align:left;border-bottom:1px solid var(--borderv);font-weight:600}
+.ht td{padding:6px 8px;font-size:.74rem;border-bottom:1px solid var(--borderv)}
+.ht tr:last-child td{border-bottom:none}
+.ht td.m{font-family:var(--mono)}
+
+/* CALC */
+.calc-layout{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
+.sp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.sh{display:grid;grid-template-columns:65px 120px 110px 95px 78px;gap:8px;font-size:.59rem;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;padding:0 12px;margin-bottom:5px;font-weight:600}
+.sr-wrap{display:flex;flex-direction:column;gap:5px}
+.sr{display:grid;grid-template-columns:65px 120px 110px 95px 78px;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--borderv);border-radius:7px;padding:8px 12px;transition:border-color .15s}
+.sr:hover{border-color:var(--border2)}
+.sr .gpct{font-family:var(--mono);font-size:.76rem;font-weight:500;color:var(--red2)}
+.sr .sval{font-family:var(--mono);font-size:.85rem;font-weight:500}
+.sr .pval{font-family:var(--mono);color:var(--green);font-size:.8rem}
+.sr .aval{font-family:var(--mono);color:var(--yellow);font-size:.74rem}
+.sr .abtn{background:var(--accent);border:none;border-radius:5px;color:#fff;font-size:.66rem;padding:4px 8px;cursor:pointer;font-weight:600;transition:opacity .15s}
+.sr .abtn:hover{opacity:.8}
+@media(max-width:900px){.calc-layout{grid-template-columns:1fr}}
+
+/* MODAL */
+.moverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.moverlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:22px;width:500px;max-width:96vw;max-height:92vh;overflow-y:auto}
+.mtitle{font-size:.92rem;font-weight:700;margin-bottom:16px}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.mfull{grid-column:span 2}
+.mact{display:flex;gap:10px;margin-top:16px;justify-content:flex-end}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚙ Wheel Strategy</div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="btc-live">
+      <div class="live-dot"></div>
+      <span style="font-size:.67rem;color:var(--text2);font-weight:500">BTC/USD</span>
+      <span class="btc-price" id="btcPrice">—</span>
+      <span class="btc-change" id="btcChange">—</span>
+    </div>
+    <div id="lastUpdate"></div>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="dashboard" onclick="switchTab(this)">Dashboard</div>
+  <div class="tab" data-tab="calculator" onclick="switchTab(this)">Put Calculator</div>
+  <div class="tab" data-tab="history" onclick="switchTab(this)">History</div>
+</div>
+
+<!-- ═══════════ DASHBOARD ═══════════ -->
+<div class="page active" id="page-dashboard">
+
+  <div class="grid-3">
+
+    <!-- Balance -->
+    <div class="card">
+      <div class="card-title"><span class="ctl">Options Balance</span></div>
+      <div style="margin-bottom:10px">
+        <div class="ig">
+          <span class="il">Total Options Balance ($)</span>
+          <input type="text" inputmode="numeric" class="if" id="optBalance" value="20,000" oninput="fmtNum(this);calcAll()">
+        </div>
+      </div>
+      <div class="ss">
+        <div class="sb"><div class="sl">Open Put Notional</div><div class="sv yellow" id="sumOpenPuts">—</div></div>
+        <div class="sb"><div class="sl">Free Collateral</div><div class="sv green" id="sumFree">—</div></div>
+        <div class="sb"><div class="sl">Open Premium</div><div class="sv blue" id="sumPutPrem">—</div></div>
+        <div class="sb"><div class="sl">Avg Exercise Price</div><div class="sv" id="sumAvgEx">—</div></div>
+      </div>
+      <div class="cbar">
+        <div class="cbarlabel">Collateral Coverage</div>
+        <div class="bartrack"><div class="barfill" id="coverBar" style="width:0%"></div></div>
+        <div class="bartxt"><span id="coverPct">0%</span><span id="coverStatus">—</span></div>
+      </div>
+      <div class="canopen" id="canOpen">Calculating…</div>
+    </div>
+
+    <!-- Short Put Pivot -->
+    <div class="card">
+      <div class="card-title"><span class="ctl">Open Short Puts</span></div>
+      <table class="pt"><thead><tr><th>Strike</th><th>Contracts</th><th>Notional</th><th>% Gap</th><th>Expiry</th></tr></thead>
+      <tbody id="putPivot"></tbody></table>
+    </div>
+
+    <!-- Short Call Pivot -->
+    <div class="card">
+      <div class="card-title"><span class="ctl">Open Short Calls</span></div>
+      <table class="pt"><thead><tr><th>Strike</th><th>Contracts</th><th>Notional</th><th>% Gap</th><th>Expiry</th></tr></thead>
+      <tbody id="callPivot"></tbody></table>
+    </div>
+
+  </div>
+
+  <!-- LOTS -->
+  <div class="section-gap">
+    <div class="card">
+      <div class="card-title">
+        <span class="ctl">BTC Lots — CSP Exercised Positions</span>
+        <button class="btn btn-p btn-sm" onclick="openLotModal(null)">+ Add Lot</button>
+      </div>
+      <div class="ow">
+        <table class="lt">
+          <thead><tr>
+            <th>Lot</th><th>Buy Price</th><th>Amount</th><th>Cost</th>
+            <th>Target (Strike)</th><th>P/L vs Now</th><th>Acc. Realized P/L</th>
+            <th>Net P/L</th><th>Coverage</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="lotsBody"></tbody>
+          <tfoot id="lotsFoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPEN ORDERS -->
+  <div class="section-gap">
+    <div class="card">
+      <div class="card-title">
+        <span class="ctl">Open Orders</span>
+        <button class="btn btn-p btn-sm" onclick="openOrderModal(null)">+ New Order</button>
+      </div>
+      <div class="filters" id="filters">
+        <button class="fbtn active" onclick="filterOrders('all',this)">All</button>
+        <button class="fbtn" onclick="filterOrders('Short Put',this)">Short Put</button>
+        <button class="fbtn" onclick="filterOrders('Short Call',this)">Short Call</button>
+      </div>
+      <div class="ow">
+        <table class="ot">
+          <thead><tr>
+            <th>CEX</th><th>Product</th><th>Open Date</th><th>Expiry</th>
+            <th>Strike</th><th>% Gap</th><th>Contracts</th>
+            <th>APY</th><th>Premium/Ct</th><th>Total P&L</th><th>Status</th><th>Note</th><th></th>
+          </tr></thead>
+          <tbody id="ordersBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /dashboard -->
+
+<!-- ═══════════ PUT CALCULATOR ═══════════ -->
+<div class="page" id="page-calculator">
+  <div class="calc-layout">
+    <div class="card" style="position:sticky;top:68px">
+      <div class="card-title"><span class="ctl">Parameters</span></div>
+      <div class="sp">
+        <div class="ig" style="grid-column:span 2">
+          <span class="il">Options Balance ($)</span>
+          <input type="text" inputmode="numeric" class="if" id="calcBal" value="20,000" oninput="fmtNum(this);renderCalc()">
+        </div>
+        <div class="ig">
+          <span class="il">Contract Size (BTC)</span>
+          <input type="text" inputmode="numeric" class="if" id="ctSize" value="0.1" oninput="renderCalc()">
+        </div>
+        <div class="ig">
+          <span class="il">Days to Expiry</span>
+          <input type="text" inputmode="numeric" class="if" id="dte" value="7" oninput="renderCalc()">
+        </div>
+        <div class="ig" style="grid-column:span 2">
+          <span class="il">Implied Volatility (Annual %)</span>
+          <input type="text" inputmode="numeric" class="if" id="iv" value="65" oninput="renderCalc()">
+        </div>
+      </div>
+      <div style="background:var(--surface2);border-radius:7px;padding:10px 12px;border:1px solid var(--borderv)">
+        <div style="font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-weight:600">Live BTC Price</div>
+        <div style="font-family:var(--mono);font-size:1.05rem;font-weight:500;color:var(--accent2)" id="calcBtcShow">—</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ctl">Short Put Strike Scenarios</span></div>
+      <div class="sh"><span>Gap %</span><span>Strike</span><span>Est. Premium</span><span>APY</span><span></span></div>
+      <div class="sr-wrap" id="strikeRows"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ HISTORY ═══════════ -->
+<div class="page" id="page-history">
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:stretch">
+    <div class="sb" style="flex:1;min-width:130px"><div class="sl">Total Premium</div><div class="sv green" id="hTotPrem">—</div></div>
+    <div class="sb" style="flex:1;min-width:110px"><div class="sl">Closed Orders</div><div class="sv blue" id="hTotOrd">—</div></div>
+    <div class="sb" style="flex:1;min-width:110px"><div class="sl">Win Rate</div><div class="sv yellow" id="hWinRate">—</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-p" onclick="openHistModal()">+ Add Entry</button>
+      <button class="btn btn-g" onclick="exportData()">⬇ Export</button>
+      <label class="btn btn-g" style="cursor:pointer">⬆ Import<input type="file" accept=".json" id="importFile" style="display:none" onchange="importData(event)"></label>
+    </div>
+  </div>
+  <div id="histMonths"></div>
+</div>
+
+<!-- ═══════════ MODALS ═══════════ -->
+
+<!-- Order Modal -->
+<div class="moverlay" id="mOrder">
+  <div class="modal">
+    <div class="mtitle" id="mOrderTitle">New Order</div>
+    <div class="mgrid">
+      <div class="ig"><span class="il">CEX</span>
+        <select class="if" id="mo_cex"><option>BINANCE</option><option>OKX</option><option>DERIBIT</option></select></div>
+      <div class="ig"><span class="il">Product</span>
+        <select class="if" id="mo_product"><option>Short Put</option><option>Short Call</option></select></div>
+      <div class="ig"><span class="il">Open Date</span><input type="date" class="if" id="mo_open"></div>
+      <div class="ig"><span class="il">Expiry Date</span><input type="date" class="if" id="mo_expiry"></div>
+      <div class="ig"><span class="il">Strike Price ($)</span>
+        <input type="text" inputmode="numeric" class="if" id="mo_strike" placeholder="70,000" oninput="fmtNum(this)"></div>
+      <div class="ig"><span class="il">Contracts</span><input type="text" inputmode="numeric" class="if" id="mo_contracts" value="0.04"></div>
+      <div class="ig"><span class="il">Premium / Contract ($)</span>
+        <input type="text" inputmode="numeric" class="if" id="mo_prem" placeholder="145" oninput="fmtNum(this)"></div>
+      <div class="ig"><span class="il">Currency</span>
+        <select class="if" id="mo_curr"><option>Contracts</option><option>USD</option></select></div>
+      <div class="ig mfull"><span class="il">Note</span><input type="text" class="if" id="mo_note" placeholder="e.g. L5-L6"></div>
+    </div>
+    <div class="mact">
+      <button class="btn btn-g" onclick="closeModal('mOrder')">Cancel</button>
+      <button class="btn btn-p" onclick="submitOrder()">Save Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lot Modal -->
+<div class="moverlay" id="mLot">
+  <div class="modal">
+    <div class="mtitle" id="mLotTitle">Add BTC Lot</div>
+    <div class="mgrid">
+      <div class="ig mfull"><span class="il">Lot Name</span><input type="text" class="if" id="ml_name" placeholder="Short call L9"></div>
+      <div class="ig"><span class="il">Buy Price ($)</span>
+        <input type="text" inputmode="numeric" class="if" id="ml_price" placeholder="75,000" oninput="fmtNum(this)"></div>
+      <div class="ig"><span class="il">Amount (BTC)</span><input type="text" inputmode="numeric" class="if" id="ml_amt" placeholder="0.05"></div>
+      <div class="ig"><span class="il">Target Strike ($)</span>
+        <input type="text" inputmode="numeric" class="if" id="ml_target" placeholder="80,000" oninput="fmtNum(this)"></div>
+      <div class="ig"><span class="il">Acc. Realized P/L ($)</span>
+        <input type="text" inputmode="numeric" class="if" id="ml_acc" placeholder="0.00" oninput="fmtNum(this)"></div>
+    </div>
+    <div class="mact">
+      <button class="btn btn-g" onclick="closeModal('mLot')">Cancel</button>
+      <button class="btn btn-p" onclick="submitLot()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- History Entry Modal -->
+<div class="moverlay" id="mHist">
+  <div class="modal">
+    <div class="mtitle">Add History Entry</div>
+    <div class="mgrid">
+      <div class="ig"><span class="il">CEX</span>
+        <select class="if" id="mh_cex"><option>BINANCE</option><option>OKX</option><option>DERIBIT</option></select></div>
+      <div class="ig"><span class="il">Product</span>
+        <select class="if" id="mh_product"><option>Short Put</option><option>Short Call</option></select></div>
+      <div class="ig"><span class="il">Open Date</span><input type="date" class="if" id="mh_open"></div>
+      <div class="ig"><span class="il">Close Date</span><input type="date" class="if" id="mh_close"></div>
+      <div class="ig"><span class="il">Strike Price ($)</span>
+        <input type="text" inputmode="numeric" class="if" id="mh_strike" oninput="fmtNum(this)"></div>
+      <div class="ig"><span class="il">Contracts</span><input type="text" inputmode="numeric" class="if" id="mh_contracts" value="0.04"></div>
+      <div class="ig"><span class="il">Premium / Contract ($)</span>
+        <input type="text" inputmode="numeric" class="if" id="mh_prem" oninput="fmtNum(this)"></div>
+      <div class="ig"><span class="il">Status</span>
+        <select class="if" id="mh_status">
+          <option value="closed">Closed (OTM / profit)</option>
+          <option value="exercised">Exercised</option>
+        </select></div>
+      <div class="ig mfull"><span class="il">Note</span><input type="text" class="if" id="mh_note"></div>
+    </div>
+    <div class="mact">
+      <button class="btn btn-g" onclick="closeModal('mHist')">Cancel</button>
+      <button class="btn btn-p" onclick="submitHist()">Add</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───
+let btcPrice = 77864.86;
+let orders = [
+  {id:1, cex:'BINANCE',product:'Short Put', openDate:'2026-04-24',expiryDate:'2026-05-01',strike:70000, contracts:0.04,premium:145, currency:'Contracts',status:'open',note:''},
+  {id:2, cex:'BINANCE',product:'Short Put', openDate:'2026-04-24',expiryDate:'2026-05-01',strike:71000, contracts:0.04,premium:205, currency:'Contracts',status:'open',note:''},
+  {id:3, cex:'BINANCE',product:'Short Put', openDate:'2026-04-24',expiryDate:'2026-05-01',strike:72000, contracts:0.04,premium:280, currency:'Contracts',status:'open',note:''},
+  {id:4, cex:'BINANCE',product:'Short Put', openDate:'2026-04-24',expiryDate:'2026-05-01',strike:74000, contracts:0.02,premium:535, currency:'Contracts',status:'open',note:''},
+  {id:5, cex:'BINANCE',product:'Short Call',openDate:'2026-04-24',expiryDate:'2026-05-15',strike:84000, contracts:0.02,premium:790, currency:'Contracts',status:'open',note:'L5-L6'},
+  {id:6, cex:'BINANCE',product:'Short Call',openDate:'2026-03-19',expiryDate:'2026-05-29',strike:88000, contracts:0.03,premium:1310,currency:'Contracts',status:'open',note:'L4&L7: 92000'},
+  {id:7, cex:'BINANCE',product:'Short Call',openDate:'2026-03-19',expiryDate:'2026-05-29',strike:94000, contracts:0.06,premium:740, currency:'Contracts',status:'open',note:'L4&L7: 92000'},
+  {id:8, cex:'BINANCE',product:'Short Call',openDate:'2026-01-29',expiryDate:'2026-06-26',strike:105000,contracts:0.12,premium:3335,currency:'Contracts',status:'open',note:'L1-L3'},
+  {id:9, cex:'BINANCE',product:'Short Call',openDate:'2026-03-27',expiryDate:'2026-06-26',strike:95000, contracts:0.09,premium:1480,currency:'Contracts',status:'open',note:'L4&L7'},
+];
+let lots = [
+  {id:1,name:'Short call L1',price:110050,  amount:0.05080,target:114000,accRealPL:370.26},
+  {id:2,name:'Short call L2',price:97151.98,amount:0.05043,target:98000, accRealPL:153.59},
+  {id:3,name:'Short call L3',price:84010.14,amount:0.02000,target:94000, accRealPL:82.08},
+  {id:4,name:'Short call L5',price:82700,   amount:0.06000,target:85000, accRealPL:211.41},
+  {id:5,name:'Short call L6',price:81480,   amount:0.05000,target:84000, accRealPL:176.18},
+  {id:6,name:'Short call L4',price:92650,   amount:0.04317,target:92650, accRealPL:92.70},
+  {id:7,name:'Short call L7',price:66200,   amount:0.05000,target:78000, accRealPL:52.88},
+  {id:8,name:'Short call L8',price:0,       amount:0.05000,target:75000, accRealPL:0,problem:true},
+];
+let closed = [];
+let orderFilter = 'all';
+let nextId = 10;
+let editOrderId = null;
+let editLotId = null;
+
+// ─── HELPERS ───
+function fmtNum(el) {
+  const v = el.value.replace(/,/g,'').replace(/[^\d.]/g,'');
+  const p = v.split('.');
+  p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  el.value = p.length>1 ? p[0]+'.'+p[1] : p[0];
+}
+const pn = s => parseFloat((s+'').replace(/,/g,'')) || 0;
+const usd = (n,d=0) => '$'+n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+// ─── BTC PRICE ───
+async function fetchBtc() {
+  try {
+    const r = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT');
+    const d = await r.json();
+    btcPrice = parseFloat(d.lastPrice);
+    const chg = parseFloat(d.priceChangePercent);
+    document.getElementById('btcPrice').textContent = usd(btcPrice,2);
+    const ce = document.getElementById('btcChange');
+    ce.textContent = (chg>=0?'+':'')+chg.toFixed(2)+'%';
+    ce.className = 'btc-change '+(chg>=0?'up':'down');
+    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+    const cs = document.getElementById('calcBtcShow');
+    if(cs) cs.textContent = usd(btcPrice,2);
+    calcAll();
+  } catch(e) {}
+}
+
+// ─── CALC ALL ───
+function calcAll() {
+  renderSummary();
+  renderPivots();
+  renderLots();
+  renderOrders();
+  renderHistory();
+  renderCalc();
+}
+
+// ─── SUMMARY ───
+function renderSummary() {
+  const bal = pn(document.getElementById('optBalance').value);
+  const puts = orders.filter(o=>o.product==='Short Put'&&o.status==='open');
+  const putVal = puts.reduce((s,o)=>s+o.strike*o.contracts,0);
+  const free = bal - putVal;
+  const pct = bal>0 ? Math.min(150,(putVal/bal)*100) : 0;
+  const putPrem = puts.reduce((s,o)=>s+o.premium*o.contracts,0);
+  const lv = lots.filter(l=>l.price>0);
+  const avgEx = lv.length ? lv.reduce((s,l)=>s+l.price*l.amount,0)/lv.reduce((s,l)=>s+l.amount,0) : 0;
+
+  document.getElementById('sumOpenPuts').textContent = usd(putVal);
+  document.getElementById('sumFree').textContent     = usd(Math.max(0,free));
+  document.getElementById('sumPutPrem').textContent  = usd(putPrem,2);
+  document.getElementById('sumAvgEx').textContent    = avgEx>0 ? usd(avgEx) : '—';
+
+  const b = document.getElementById('coverBar');
+  b.style.width = Math.min(100,pct)+'%';
+  b.className = 'barfill'+(pct>100?' over':'');
+  document.getElementById('coverPct').textContent = pct.toFixed(1)+'%';
+  document.getElementById('coverStatus').textContent = pct>=100 ? '⚠ Over-committed' : 'Available';
+  document.getElementById('canOpen').innerHTML =
+    `Free collateral: <strong>${usd(Math.max(0,free))}</strong> &nbsp;·&nbsp; Premium from open puts: <strong style="color:var(--green)">${usd(putPrem,2)}</strong>`;
+}
+
+// ─── PIVOTS ───
+function renderOnePivot(bodyId, type) {
+  const open = orders.filter(o=>o.product===type&&o.status==='open');
+  const g = {};
+  open.forEach(o=>{
+    if(!g[o.strike]) g[o.strike]={c:0,exp:o.expiryDate};
+    g[o.strike].c += o.contracts;
+  });
+  const body = document.getElementById(bodyId);
+  body.innerHTML='';
+  if(!Object.keys(g).length){
+    body.innerHTML=`<tr><td colspan="5" style="color:var(--text3);padding:12px 10px;font-size:.76rem">No open ${type.toLowerCase()}s</td></tr>`;
+    return;
+  }
+  Object.keys(g).sort((a,b)=>b-a).forEach(s=>{
+    const d = g[s];
+    const pct = ((s-btcPrice)/btcPrice*100).toFixed(2);
+    const cls = pct<0?'red':'green';
+    body.innerHTML+=`<tr>
+      <td>${usd(+s)}</td><td>${d.c.toFixed(2)}</td><td>${usd(s*d.c)}</td>
+      <td><span class="pb ${cls}">${pct}%</span></td>
+      <td style="color:var(--text2)">${d.exp}</td>
+    </tr>`;
+  });
+}
+function renderPivots(){renderOnePivot('putPivot','Short Put');renderOnePivot('callPivot','Short Call')}
+
+// ─── LOTS ───
+function renderLots() {
+  const body = document.getElementById('lotsBody');
+  const foot = document.getElementById('lotsFoot');
+  body.innerHTML='';
+  let tC=0,tPL=0,tA=0,tN=0;
+
+  lots.forEach(lot=>{
+    const cost = lot.price*lot.amount;
+    const pl = lot.price>0 ? btcPrice*lot.amount-cost : 0;
+    const net = pl+lot.accRealPL;
+    tC+=cost; tPL+=pl; tA+=lot.accRealPL; tN+=net;
+    const covOK = btcPrice>=lot.target;
+    const tr = document.createElement('tr');
+    if(lot.problem) tr.style.background='rgba(232,64,64,.025)';
+    tr.innerHTML=`
+      <td><div class="lname">
+        <div class="ldot" style="background:${lot.problem?'var(--red)':'var(--purple)'}"></div>
+        ${lot.name}
+        ${lot.problem?'<span class="tagr">NO BTC</span>':''}
+      </div></td>
+      <td>${lot.price>0?usd(lot.price,2):'—'}</td>
+      <td>${lot.amount} BTC</td>
+      <td>${lot.price>0?usd(cost):'—'}</td>
+      <td>${usd(lot.target)}</td>
+      <td class="${pl>=0?'ppos':'pneg'}">${lot.price>0?(pl>=0?'+':'')+usd(pl):'—'}</td>
+      <td class="ppos">${usd(lot.accRealPL,2)}</td>
+      <td class="${net>=0?'ppos':'pneg'}">${lot.price>0?(net>=0?'+':'')+usd(net):'—'}</td>
+      <td>${covOK
+        ?'<span class="fcov">Fully Cover</span>'
+        :`<span style="font-size:.7rem;color:var(--red2);font-family:var(--mono)">${usd((lot.target-btcPrice)*lot.amount)} short</span>`
+      }</td>
+      <td style="text-align:left;white-space:nowrap">
+        <button class="btn-ic" onclick="openLotModal(${lot.id})" title="Edit">✎</button>
+        <button class="btn-ic btn-rd" onclick="delLot(${lot.id})" title="Delete" style="margin-left:4px">✕</button>
+      </td>
+    `;
+    body.appendChild(tr);
+  });
+  foot.innerHTML=`<tr class="tr-tot">
+    <td>TOTAL</td><td></td>
+    <td>${lots.reduce((s,l)=>s+l.amount,0).toFixed(4)} BTC</td>
+    <td>${usd(tC)}</td><td></td>
+    <td class="${tPL>=0?'ppos':'pneg'}">${(tPL>=0?'+':'')+usd(tPL)}</td>
+    <td class="ppos">${usd(tA,2)}</td>
+    <td class="${tN>=0?'ppos':'pneg'}">${(tN>=0?'+':'')+usd(tN)}</td>
+    <td></td><td></td>
+  </tr>`;
+}
+function delLot(id){if(!confirm('Delete this lot?'))return;lots=lots.filter(l=>l.id!==id);calcAll()}
+
+// ─── ORDERS ───
+function renderOrders() {
+  const body = document.getElementById('ordersBody');
+  body.innerHTML='';
+  let list = orders.filter(o=>{
+    if(orderFilter==='Short Put') return o.product==='Short Put';
+    if(orderFilter==='Short Call') return o.product==='Short Call';
+    return true;
+  });
+  list.sort((a,b)=>a.product!==b.product?(a.product==='Short Put'?-1:1):a.expiryDate.localeCompare(b.expiryDate));
+
+  list.forEach(o=>{
+    const gapPct = ((o.strike-btcPrice)/btcPrice*100).toFixed(2);
+    const dte = Math.ceil((new Date(o.expiryDate)-new Date())/86400000);
+    const notional = o.strike*o.contracts;
+    const apy = notional>0 ? (o.premium*o.contracts/notional)*(365/Math.max(1,dte))*100 : 0;
+    const tot = o.premium*o.contracts;
+    const gc = parseFloat(gapPct)<0?'var(--red2)':'var(--green2)';
+    const tr = document.createElement('tr');
+    tr.innerHTML=`
+      <td style="font-size:.65rem;font-weight:600;color:var(--text2)">${o.cex}</td>
+      <td><span class="badge ${o.product==='Short Put'?'put':'call'}">${o.product}</span></td>
+      <td style="color:var(--text2);font-family:var(--mono)">${o.openDate}</td>
+      <td style="font-family:var(--mono);color:var(--text2)">${o.expiryDate}<span style="font-size:.6rem;color:var(--text3)"> (${dte}d)</span></td>
+      <td style="font-family:var(--mono);font-weight:500">${usd(o.strike)}</td>
+      <td style="color:${gc};font-family:var(--mono);font-weight:500">${gapPct}%</td>
+      <td style="font-family:var(--mono)">${o.contracts}</td>
+      <td><span class="apy-c">${apy.toFixed(2)}%</span></td>
+      <td style="color:var(--green);font-family:var(--mono)">${usd(o.premium)}</td>
+      <td style="color:var(--green);font-family:var(--mono);font-weight:500">${usd(tot,2)}</td>
+      <td>
+        <select class="ss-sel badge ${o.status}" onchange="changeStatus(${o.id},this.value)">
+          <option value="open" ${o.status==='open'?'selected':''}>Open</option>
+          <option value="closed" ${o.status==='closed'?'selected':''}>Closed</option>
+          <option value="exercised" ${o.status==='exercised'?'selected':''}>Exercised</option>
+        </select>
+      </td>
+      <td style="color:var(--text3);font-size:.7rem">${o.note||'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn-ic" onclick="openOrderModal(${o.id})" title="Edit">✎</button>
+        <button class="btn-ic btn-rd" onclick="delOrder(${o.id})" title="Delete" style="margin-left:3px">✕</button>
+      </td>
+    `;
+    body.appendChild(tr);
+  });
+}
+function filterOrders(f,btn){
+  orderFilter=f;
+  document.querySelectorAll('#filters .fbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderOrders();
+}
+function changeStatus(id,val){
+  const idx=orders.findIndex(o=>o.id===id);
+  if(idx<0)return;
+  const o=orders[idx];
+  if(val==='closed'||val==='exercised'){
+    closed.push({...o,status:val,closedDate:new Date().toISOString().split('T')[0]});
+    if(o.product==='Short Call'&&val==='closed'){
+      const profit=o.premium*o.contracts;
+      const parts=o.note?o.note.split(/[-&,\s:]+/).map(s=>s.trim()).filter(Boolean):[];
+      if(parts.length){
+        lots.forEach(l=>{
+          const matches=parts.filter(p=>l.name.toLowerCase().includes(p.toLowerCase()));
+          if(matches.length) l.accRealPL+=profit/matches.length;
+        });
+      }
+    }
+    orders.splice(idx,1);
+  } else { o.status=val; }
+  calcAll();
+}
+function delOrder(id){if(!confirm('Delete?'))return;orders=orders.filter(o=>o.id!==id);calcAll()}
+
+// ─── HISTORY ───
+function renderHistory() {
+  const tot=closed.reduce((s,o)=>s+o.premium*o.contracts,0);
+  const wins=closed.filter(o=>o.status==='closed').length;
+  const wr=closed.length>0?(wins/closed.length*100).toFixed(1)+'%':'—';
+  document.getElementById('hTotPrem').textContent=usd(tot,2);
+  document.getElementById('hTotOrd').textContent=closed.length;
+  document.getElementById('hWinRate').textContent=wr;
+
+  const byM={};
+  closed.forEach(o=>{const k=(o.closedDate||o.expiryDate||'unknown').slice(0,7);if(!byM[k])byM[k]=[];byM[k].push(o)});
+  const cont=document.getElementById('histMonths');
+  if(!closed.length){
+    cont.innerHTML='<div style="color:var(--text3);padding:40px;text-align:center;font-size:.8rem">No closed orders yet. Change an order status or add manually.</div>';
+    return;
+  }
+  cont.innerHTML='';
+  const bal=pn(document.getElementById('optBalance').value)||20000;
+  Object.keys(byM).sort().reverse().forEach(month=>{
+    const items=byM[month];
+    const mPrem=items.reduce((s,o)=>s+o.premium*o.contracts,0);
+    const mPct=bal>0?(mPrem/bal*100).toFixed(2):'0';
+    const div=document.createElement('div');
+    div.className='mc';
+    div.innerHTML=`
+      <div class="mh">
+        <div class="mt">${month}</div>
+        <div class="mstats">
+          <div class="mst"><div class="msl">Premium</div><div class="msv" style="color:var(--green)">${usd(mPrem,2)}</div></div>
+          <div class="mst"><div class="msl">% Capital</div><div class="msv" style="color:var(--yellow)">${mPct}%</div></div>
+          <div class="mst"><div class="msl">Orders</div><div class="msv" style="color:var(--accent2)">${items.length}</div></div>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+      <table class="ht">
+        <thead><tr><th>Product</th><th>Strike</th><th>Open</th><th>Closed</th><th>Contracts</th><th>Prem/Ct</th><th>Total</th><th>Status</th><th>Note</th><th></th></tr></thead>
+        <tbody>${items.map((o,i)=>`<tr>
+          <td><span class="badge ${o.product==='Short Put'?'put':'call'}">${o.product}</span></td>
+          <td class="m">${usd(o.strike)}</td>
+          <td class="m" style="color:var(--text2)">${o.openDate}</td>
+          <td class="m" style="color:var(--text2)">${o.closedDate||'—'}</td>
+          <td class="m">${o.contracts}</td>
+          <td class="m" style="color:var(--green)">${usd(o.premium,0)}</td>
+          <td class="m" style="color:var(--green);font-weight:500">${usd(o.premium*o.contracts,2)}</td>
+          <td><span class="badge ${o.status}">${o.status}</span></td>
+          <td style="color:var(--text3);font-size:.7rem">${o.note||'—'}</td>
+          <td style="white-space:nowrap">
+            <button class="btn-ic" title="Re-open as active order" onclick="reOpen(${i},'${month}')">↩ Re-open</button>
+            <button class="btn-ic btn-rd" onclick="delHist(${i},'${month}')" style="margin-left:3px">✕</button>
+          </td>
+        </tr>`).join('')}
+        </tbody>
+      </table></div>
+    `;
+    cont.appendChild(div);
+  });
+}
+function reOpen(i,month){
+  const byM={};
+  closed.forEach(o=>{const k=(o.closedDate||o.expiryDate||'unknown').slice(0,7);if(!byM[k])byM[k]=[];byM[k].push(o)});
+  const item=byM[month][i];
+  if(!item)return;
+  const newO={...item,id:nextId++,status:'open'};
+  delete newO.closedDate;
+  orders.push(newO);
+  if(item.product==='Short Call'&&item.status==='closed'){
+    const profit=item.premium*item.contracts;
+    const parts=item.note?item.note.split(/[-&,\s:]+/).map(s=>s.trim()).filter(Boolean):[];
+    lots.forEach(l=>{if(parts.some(p=>l.name.toLowerCase().includes(p.toLowerCase()))) l.accRealPL-=profit/Math.max(1,parts.length)});
+  }
+  closed.splice(closed.indexOf(item),1);
+  switchTabByName('dashboard');
+  calcAll();
+}
+function delHist(i,month){
+  if(!confirm('Remove?'))return;
+  const byM={};
+  closed.forEach(o=>{const k=(o.closedDate||o.expiryDate||'unknown').slice(0,7);if(!byM[k])byM[k]=[];byM[k].push(o)});
+  const item=byM[month][i];
+  const gi=closed.indexOf(item);
+  if(gi>=0) closed.splice(gi,1);
+  calcAll();
+}
+
+// ─── CALCULATOR ───
+const GAPS=[-3,-5,-8,-10,-12,-15,-20];
+function estPrem(strike,dte,iv){
+  const t=dte/365;
+  const otm=Math.max(0.04,1-Math.abs(btcPrice-strike)/btcPrice*3);
+  return Math.max(1,btcPrice*(iv/100)*Math.sqrt(t)*0.4*otm*(strike/btcPrice));
+}
+function renderCalc(){
+  const iv=pn(document.getElementById('iv').value)||65;
+  const dte=pn(document.getElementById('dte').value)||7;
+  const bal=pn(document.getElementById('calcBal')?.value)||20000;
+  const ct=pn(document.getElementById('ctSize').value)||0.1;
+  const cs=document.getElementById('calcBtcShow');
+  if(cs) cs.textContent=usd(btcPrice,2);
+  const rows=document.getElementById('strikeRows');
+  if(!rows)return;
+  rows.innerHTML='';
+  GAPS.forEach(g=>{
+    const s=Math.round(btcPrice*(1+g/100)/500)*500;
+    const p=estPrem(s,dte,iv);
+    const n=s*ct;
+    const apy=n>0?(p/n)*(365/dte)*100:0;
+    const d=document.createElement('div');
+    d.className='sr';
+    d.innerHTML=`<span class="gpct">${g}%</span><span class="sval">${usd(s)}</span><span class="pval">${usd(p,0)}</span><span class="aval">${apy.toFixed(1)}%</span><button class="abtn" onclick="quickAdd(${s},${p.toFixed(0)})">+ Add</button>`;
+    rows.appendChild(d);
+  });
+}
+function quickAdd(strike,prem){
+  openOrderModal(null);
+  setTimeout(()=>{
+    document.getElementById('mo_product').value='Short Put';
+    document.getElementById('mo_strike').value=strike.toLocaleString('en-US');
+    document.getElementById('mo_prem').value=prem.toLocaleString('en-US');
+    document.getElementById('mo_open').value=new Date().toISOString().split('T')[0];
+    const exp=new Date();exp.setDate(exp.getDate()+(pn(document.getElementById('dte').value)||7));
+    document.getElementById('mo_expiry').value=exp.toISOString().split('T')[0];
+  },10);
+}
+
+// ─── MODALS ───
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+
+function openOrderModal(id){
+  editOrderId=id;
+  const o=id?orders.find(x=>x.id===id):null;
+  document.getElementById('mOrderTitle').textContent=o?'Edit Order':'New Order';
+  document.getElementById('mo_cex').value=o?o.cex:'BINANCE';
+  document.getElementById('mo_product').value=o?o.product:'Short Put';
+  document.getElementById('mo_open').value=o?o.openDate:new Date().toISOString().split('T')[0];
+  document.getElementById('mo_expiry').value=o?o.expiryDate:'';
+  document.getElementById('mo_strike').value=o?o.strike.toLocaleString('en-US'):'';
+  document.getElementById('mo_contracts').value=o?o.contracts:'0.04';
+  document.getElementById('mo_prem').value=o?o.premium.toLocaleString('en-US'):'';
+  document.getElementById('mo_curr').value=o?o.currency:'Contracts';
+  document.getElementById('mo_note').value=o?o.note:'';
+  openModal('mOrder');
+}
+function submitOrder(){
+  const o={
+    id:editOrderId||nextId++,
+    cex:document.getElementById('mo_cex').value,
+    product:document.getElementById('mo_product').value,
+    openDate:document.getElementById('mo_open').value,
+    expiryDate:document.getElementById('mo_expiry').value,
+    strike:pn(document.getElementById('mo_strike').value),
+    contracts:pn(document.getElementById('mo_contracts').value),
+    premium:pn(document.getElementById('mo_prem').value),
+    currency:document.getElementById('mo_curr').value,
+    status:'open',
+    note:document.getElementById('mo_note').value,
+  };
+  if(editOrderId){const i=orders.findIndex(x=>x.id===editOrderId);if(i>=0)orders[i]=o}
+  else orders.push(o);
+  closeModal('mOrder');calcAll();
+}
+
+function openLotModal(id){
+  editLotId=id;
+  const l=id?lots.find(x=>x.id===id):null;
+  document.getElementById('mLotTitle').textContent=l?'Edit Lot':'Add BTC Lot';
+  document.getElementById('ml_name').value=l?l.name:'';
+  document.getElementById('ml_price').value=l&&l.price?l.price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'';
+  document.getElementById('ml_amt').value=l?l.amount:'';
+  document.getElementById('ml_target').value=l?l.target.toLocaleString('en-US'):'';
+  document.getElementById('ml_acc').value=l?l.accRealPL.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'0.00';
+  openModal('mLot');
+}
+function submitLot(){
+  const price=pn(document.getElementById('ml_price').value);
+  const l={
+    id:editLotId||(lots.length?Math.max(...lots.map(x=>x.id))+1:1),
+    name:document.getElementById('ml_name').value,
+    price,
+    amount:pn(document.getElementById('ml_amt').value),
+    target:pn(document.getElementById('ml_target').value),
+    accRealPL:pn(document.getElementById('ml_acc').value),
+    problem:price===0,
+  };
+  if(editLotId){const i=lots.findIndex(x=>x.id===editLotId);if(i>=0)lots[i]=l}
+  else lots.push(l);
+  closeModal('mLot');calcAll();
+}
+
+function openHistModal(){
+  document.getElementById('mh_open').value='';
+  document.getElementById('mh_close').value=new Date().toISOString().split('T')[0];
+  document.getElementById('mh_strike').value='';
+  document.getElementById('mh_contracts').value='0.04';
+  document.getElementById('mh_prem').value='';
+  document.getElementById('mh_note').value='';
+  openModal('mHist');
+}
+function submitHist(){
+  closed.push({
+    id:nextId++,
+    cex:document.getElementById('mh_cex').value,
+    product:document.getElementById('mh_product').value,
+    openDate:document.getElementById('mh_open').value,
+    expiryDate:document.getElementById('mh_close').value,
+    closedDate:document.getElementById('mh_close').value,
+    strike:pn(document.getElementById('mh_strike').value),
+    contracts:pn(document.getElementById('mh_contracts').value),
+    premium:pn(document.getElementById('mh_prem').value),
+    currency:'Contracts',
+    status:document.getElementById('mh_status').value,
+    note:document.getElementById('mh_note').value,
+  });
+  closeModal('mHist');calcAll();
+}
+
+document.querySelectorAll('.moverlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')});
+});
+
+// ─── EXPORT / IMPORT ───
+function exportData(){
+  const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),orders,lots,closed,nextId},null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='wheel-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+function importData(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.orders) orders=d.orders;
+      if(d.lots) lots=d.lots;
+      if(d.closed) closed=d.closed;
+      if(d.nextId) nextId=d.nextId;
+      alert('Imported successfully!');calcAll();
+    }catch{alert('Import failed: invalid file.')}
+  };
+  r.readAsText(f);
+  e.target.value='';
+}
+
+// ─── TABS ───
+function switchTab(el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('page-'+el.dataset.tab).classList.add('active');
+}
+function switchTabByName(n){const el=document.querySelector(`.tab[data-tab="${n}"]`);if(el)switchTab(el)}
+
+// ─── INIT ───
+fetchBtc();
+setInterval(fetchBtc,15000);
+calcAll();
+</script>
+</body>
+</html>
