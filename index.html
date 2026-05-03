@@ -667,7 +667,12 @@ function renderOrders() {
     if(orderFilter==='Short Call') return o.product==='Short Call';
     return true;
   });
-  list.sort((a,b)=>a.product!==b.product?(a.product==='Short Put'?-1:1):a.expiryDate.localeCompare(b.expiryDate));
+  list.sort((a,b)=>{
+    if(a.product!==b.product) return a.product==='Short Put'?-1:1;
+    const da = a.expiryDate||'';
+    const db = b.expiryDate||'';
+    return da.localeCompare(db);
+  });
 
   list.forEach(o=>{
     const gapPct = ((o.strike-btcPrice)/btcPrice*100).toFixed(2);
@@ -1013,35 +1018,60 @@ async function pullFromSheets() {
     const data = await r.json();
     if (data.error) throw new Error(data.error);
 
+    // helper: กรอง row ว่างที่ Apps Script อาจดึงมาจาก blank rows ใน Sheet
+    const isValidOrder = o => o && o.id !== '' && o.id !== undefined && +o.id > 0 && o.product;
+    const isValidLot   = l => l && l.id !== '' && l.id !== undefined && +l.id > 0 && l.name;
+    const isValidHist  = o => o && o.id !== '' && o.id !== undefined && +o.id > 0 && o.product;
+
     if (Array.isArray(data.orders) && data.orders.length) {
-      orders = data.orders.map(o => ({
-        ...o,
-        id:        +o.id,
-        strike:    +o.strike,
-        contracts: +o.contracts,
-        premium:   +o.premium,
-      }));
+      orders = data.orders
+        .filter(isValidOrder)
+        .map(o => ({
+          ...o,
+          id:         +o.id,
+          strike:     +o.strike,
+          contracts:  +o.contracts,
+          premium:    +o.premium,
+          expiryDate: String(o.expiryDate || ''),
+          openDate:   String(o.openDate   || ''),
+          product:    String(o.product    || ''),
+          status:     String(o.status     || 'open'),
+          cex:        String(o.cex        || ''),
+          note:       String(o.note       || ''),
+          currency:   String(o.currency   || 'Contracts'),
+        }));
       nextId = Math.max(...orders.map(o=>o.id), nextId) + 1;
     }
     if (Array.isArray(data.lots) && data.lots.length) {
-      lots = data.lots.map(l => ({
-        ...l,
-        id:        +l.id,
-        price:     +l.price,
-        amount:    +l.amount,
-        target:    +l.target,
-        accRealPL: +l.accRealPL,
-        problem:   l.problem === 'true' || l.problem === true,
-      }));
+      lots = data.lots
+        .filter(isValidLot)
+        .map(l => ({
+          ...l,
+          id:        +l.id,
+          price:     +l.price,
+          amount:    +l.amount,
+          target:    +l.target,
+          accRealPL: +l.accRealPL,
+          name:      String(l.name    || ''),
+          problem:   l.problem === 'true' || l.problem === true || l.problem === 'TRUE',
+        }));
     }
     if (Array.isArray(data.history) && data.history.length) {
-      closed = data.history.map(o => ({
-        ...o,
-        id:        +o.id,
-        strike:    +o.strike,
-        contracts: +o.contracts,
-        premium:   +o.premium,
-      }));
+      closed = data.history
+        .filter(isValidHist)
+        .map(o => ({
+          ...o,
+          id:         +o.id,
+          strike:     +o.strike,
+          contracts:  +o.contracts,
+          premium:    +o.premium,
+          expiryDate: String(o.expiryDate  || ''),
+          openDate:   String(o.openDate    || ''),
+          closedDate: String(o.closedDate  || ''),
+          product:    String(o.product     || ''),
+          status:     String(o.status      || 'closed'),
+          note:       String(o.note        || ''),
+        }));
     }
     setSyncBar('ok', 'Synced · ' + new Date().toLocaleTimeString());
     calcAll();
