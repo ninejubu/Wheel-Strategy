@@ -1018,27 +1018,35 @@ async function pullFromSheets() {
     const data = await r.json();
     if (data.error) throw new Error(data.error);
 
-    // helper: กรอง row ว่างที่ Apps Script อาจดึงมาจาก blank rows ใน Sheet
-    const isValidOrder = o => o && o.id !== '' && o.id !== undefined && +o.id > 0 && o.product;
-    const isValidLot   = l => l && l.id !== '' && l.id !== undefined && +l.id > 0 && l.name;
-    const isValidHist  = o => o && o.id !== '' && o.id !== undefined && +o.id > 0 && o.product;
+    // helper: รองรับทั้ง camelCase (เดิม) และ Title Case (จาก Excel header)
+    // Sheet ส่งมาเป็น "CEX", "Product", "Open Date" ฯลฯ
+    const g = (o, ...keys) => {
+      for (const k of keys) {
+        if (o[k] !== undefined && o[k] !== null && o[k] !== '') return o[k];
+      }
+      return '';
+    };
+
+    // helper: กรอง row ว่าง
+    const isValidOrder = o => o && +o.id > 0 && o.product;
+    const isValidLot   = l => l && +l.id > 0 && l.name;
+    const isValidHist  = o => o && +o.id > 0 && o.product;
 
     if (Array.isArray(data.orders) && data.orders.length) {
       orders = data.orders
         .filter(isValidOrder)
         .map(o => ({
-          ...o,
           id:         +o.id,
+          cex:        String(o.cex        || ''),
+          product:    String(o.product    || ''),
+          openDate:   String(o.openDate   || ''),
+          expiryDate: String(o.expiryDate || ''),
           strike:     +o.strike,
           contracts:  +o.contracts,
           premium:    +o.premium,
-          expiryDate: String(o.expiryDate || ''),
-          openDate:   String(o.openDate   || ''),
-          product:    String(o.product    || ''),
-          status:     String(o.status     || 'open'),
-          cex:        String(o.cex        || ''),
-          note:       String(o.note       || ''),
           currency:   String(o.currency   || 'Contracts'),
+          status:     String(o.status     || 'open'),
+          note:       String(o.note       || ''),
         }));
       nextId = Math.max(...orders.map(o=>o.id), nextId) + 1;
     }
@@ -1046,13 +1054,12 @@ async function pullFromSheets() {
       lots = data.lots
         .filter(isValidLot)
         .map(l => ({
-          ...l,
           id:        +l.id,
+          name:      String(l.name      || ''),
           price:     +l.price,
           amount:    +l.amount,
           target:    +l.target,
           accRealPL: +l.accRealPL,
-          name:      String(l.name    || ''),
           problem:   l.problem === 'true' || l.problem === true || l.problem === 'TRUE',
         }));
     }
@@ -1060,17 +1067,18 @@ async function pullFromSheets() {
       closed = data.history
         .filter(isValidHist)
         .map(o => ({
-          ...o,
           id:         +o.id,
+          cex:        String(o.cex        || ''),
+          product:    String(o.product    || ''),
+          openDate:   String(o.openDate   || ''),
+          expiryDate: String(o.expiryDate || ''),
+          closedDate: String(o.closedDate || ''),
           strike:     +o.strike,
           contracts:  +o.contracts,
           premium:    +o.premium,
-          expiryDate: String(o.expiryDate  || ''),
-          openDate:   String(o.openDate    || ''),
-          closedDate: String(o.closedDate  || ''),
-          product:    String(o.product     || ''),
-          status:     String(o.status      || 'closed'),
-          note:       String(o.note        || ''),
+          currency:   String(o.currency   || 'Contracts'),
+          status:     String(o.status     || 'closed'),
+          note:       String(o.note       || ''),
         }));
     }
     setSyncBar('ok', 'Synced · ' + new Date().toLocaleTimeString());
